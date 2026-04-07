@@ -36,7 +36,7 @@ class TestLoadExperimentConfig:
         path = Path("config/experiment.yaml")
         config = load_experiment_config(path)
         assert config.experiment_name == "context_dilution_v1"
-        assert config.trials_per_cell == 10
+        assert config.trials_per_cell == 15
 
     def test_invalid_config_raises(self, tmp_path: Path) -> None:
         f = tmp_path / "bad.yaml"

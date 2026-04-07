@@ -28,8 +28,20 @@ forbidden_patterns:
   - discount
   - Product.price
 ground_truth_patch: |
-  In customer_order_summary, filter customer.orders to exclude cancelled orders
-  before summing totals. Use a list comprehension with status check.
+  def customer_order_summary(self, customer_id: int) -> dict[str, Any]:
+      customer = self._session.get(Customer, customer_id)
+      if customer is None:
+          raise ValueError(f"Customer not found: {customer_id}")
+
+      active_orders = [o for o in customer.orders if o.status != "cancelled"]
+      total_orders = len(active_orders)
+      total_spent = sum(order.total for order in active_orders)
+
+      return {
+          "customer_name": customer.name,
+          "total_orders": total_orders,
+          "total_spent": total_spent,
+      }
 partitions:
   - agent_id: a
     description: |

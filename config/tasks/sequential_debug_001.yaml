@@ -31,9 +31,38 @@ forbidden_patterns:
   - lru_cache
   - discount
 ground_truth_patch: |
-  In create_order, aggregate quantities per product_id before calling adjust_stock,
-  so stock validation sees the total deduction. Use a dict to accumulate quantities,
-  then iterate once per product.
+  def create_order(self, customer: Customer, items: list[dict[str, int | float]]) -> Order:
+      order = Order(customer_id=customer.id, status="pending")
+      self._session.add(order)
+      self._session.flush()
+
+      # Aggregate quantities per product to validate cumulative stock
+      qty_by_product: dict[int, int] = {}
+      for item_data in items:
+          pid = int(item_data["product_id"])
+          qty_by_product[pid] = qty_by_product.get(pid, 0) + int(item_data["quantity"])
+
+      for product_id, total_qty in qty_by_product.items():
+          product = self._session.get(Product, product_id)
+          if product is None:
+              raise ValueError(f"Product not found: {product_id}")
+          product.adjust_stock(-total_qty)
+          if product.is_low_stock():
+              self._notify("on_stock_low", product=product)
+
+      for item_data in items:
+          product = self._session.get(Product, item_data["product_id"])
+          order_item = OrderItem(
+              order_id=order.id,
+              product_id=product.id,
+              quantity=int(item_data["quantity"]),
+              unit_price=product.price,
+          )
+          self._session.add(order_item)
+
+      self._session.flush()
+      self._notify("on_order_created", order=order)
+      return order
 partitions:
   - agent_id: a
     description: |

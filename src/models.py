@@ -137,17 +137,24 @@ class AutomatedScores(BaseModel):
     expected_patterns_found: float = Field(ge=0.0, le=1.0, default=0.0)
     forbidden_patterns_absent: float = Field(ge=0.0, le=1.0, default=1.0)
     diff_similarity: float = Field(ge=0.0, le=1.0, default=0.0)
+    has_ground_truth: bool = True
 
     @property
     def composite(self) -> float:
-        """Normalized 0-1 automated score."""
+        """Normalized 0-1 automated score.
+
+        When no ground truth is available, diff_similarity is excluded
+        and its weight is redistributed equally across the other three.
+        """
         syntax_score = 1.0 if self.syntax_valid else 0.0
-        return (
-            0.25 * syntax_score
-            + 0.25 * self.expected_patterns_found
-            + 0.25 * self.forbidden_patterns_absent
-            + 0.25 * self.diff_similarity
-        )
+        if self.has_ground_truth:
+            return (
+                0.25 * syntax_score
+                + 0.25 * self.expected_patterns_found
+                + 0.25 * self.forbidden_patterns_absent
+                + 0.25 * self.diff_similarity
+            )
+        return (syntax_score + self.expected_patterns_found + self.forbidden_patterns_absent) / 3.0
 
 
 class EvaluationResult(BaseModel):
@@ -184,11 +191,24 @@ class ExperimentConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     experiment_name: str = "context_dilution_v1"
+    subject_backend: str = "anthropic"  # "anthropic", "openai", "openai-cloud"
     subject_model: str = "claude-haiku-4-5-20251001"
-    judge_model: str = "claude-sonnet-4-6-20250514"
-    trials_per_cell: int = 10
+    subject_base_url: str = ""
+    subject_api_key: str = ""
+    judge_backend: str = "openai"  # default to local for cross-family judging
+    judge_model: str = "llama3.1:70b"
+    judge_base_url: str = "http://localhost:11434/v1"
+    judge_api_key: str = "ollama"
+    summarizer_backend: str = ""  # empty = use subject client
+    summarizer_model: str = ""
+    summarizer_base_url: str = ""
+    summarizer_api_key: str = ""
+    subject_temperature: float = 0.0
+    judge_temperature: float = 0.0
+    summarizer_temperature: float = 0.0
+    trials_per_cell: int = 15
     judge_replicas: int = 3
-    budget_limit_usd: float = 20.0
+    budget_limit_usd: float = 30.0
     use_batch_api: bool = True
     use_prompt_caching: bool = True
     max_output_tokens: int = 4096

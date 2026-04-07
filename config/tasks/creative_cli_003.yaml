@@ -1,0 +1,62 @@
+id: creative_cli_003
+type: creative
+name: Design CLI interface for pipeline
+description: |
+  Design a command-line interface module for the data pipeline that exposes
+  the following commands as Python function stubs with type hints and docstrings:
+
+  1. `ingest` — run ingestion from configured sources with optional source filter
+  2. `transform` — run transform pipeline with optional step selection
+  3. `export` — export results to JSON or CSV with configurable output path
+  4. `status` — show pipeline health and last run statistics
+  5. `validate` — dry-run validation on a sample of records without processing
+
+  Write the CLI handler functions (no framework-specific code, just typed functions).
+  Each function should document its parameters, return type, and error cases.
+
+  Requirements:
+  - Use Protocol pattern (no ABC classes)
+  - Reference IngestRecord and IngestStats from the ingest module
+  - Follow the OutputWriter protocol for export
+  - File-based output only (no database)
+  - Do NOT use pandas for any data processing
+  - Validation happens only in the ingest layer
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/ingest.py
+  - pipeline/transform.py
+  - pipeline/output.py
+  - pipeline/config.py
+expected_patterns:
+  - IngestRecord
+  - IngestStats
+  - OutputWriter
+  - Protocol
+  - PipelineConfig
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+  - database
+  - sqlalchemy
+ground_truth_patch: ""
+partitions:
+  - agent_id: a
+    description: |
+      Design the ingest, transform, and validate commands. Use existing
+      ingest_from_source and run_pipeline functions.
+    relevant_files:
+      - pipeline/ingest.py
+      - pipeline/transform.py
+  - agent_id: b
+    description: |
+      Design the export and status commands. Use OutputWriter protocol
+      and IngestStats for status reporting.
+    relevant_files:
+      - pipeline/output.py
+      - pipeline/config.py
+merge_instruction: |
+  Combine both sets of CLI commands into a single coherent interface module.
+  Ensure consistent error handling, parameter naming, and return types.

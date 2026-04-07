@@ -35,8 +35,36 @@ forbidden_patterns:
   - database
   - sqlalchemy
 ground_truth_patch: |
-  Add SummaryWriter class implementing OutputWriter protocol.
-  Update metrics_to_dicts to add formatted_value field.
+  class SummaryWriter:
+      def __init__(self, output_path: Path) -> None:
+          self._path = output_path
+
+      def name(self) -> str:
+          return f"summary_file:{self._path}"
+
+      def write(self, data: list[dict[str, Any]]) -> None:
+          self._path.parent.mkdir(parents=True, exist_ok=True)
+          with open(self._path, "w") as f:
+              f.write(f"Pipeline Summary - {len(data)} records\n")
+              f.write("=" * 40 + "\n\n")
+              for record in data:
+                  f.write(f"{record.get('source', 'N/A')} | "
+                          f"{record.get('metric', 'N/A')}: "
+                          f"{record.get('value', 0):.4f}\n")
+
+  def metrics_to_dicts(metrics: list[AggregatedMetric]) -> list[dict[str, Any]]:
+      return [
+          {
+              "source": m.source,
+              "metric": m.metric_name,
+              "value": m.value,
+              "formatted_value": round(m.value, 4),
+              "period_start": m.period_start.isoformat(),
+              "period_end": m.period_end.isoformat(),
+              "sample_count": m.sample_count,
+          }
+          for m in metrics
+      ]
 partitions:
   - agent_id: a
     description: |

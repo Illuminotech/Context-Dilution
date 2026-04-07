@@ -8,14 +8,14 @@ from typing import Any
 
 import pandas as pd
 
-from src.agents.client import AnthropicClient
+from src.agents.client import create_client
 from src.agents.multi import MultiAgentExecutor
 from src.agents.single import SingleAgentExecutor
 from src.analysis.report import generate_report
 from src.analysis.statistics import run_full_analysis
 from src.analysis.visualization import generate_all_figures
 from src.context.conversation import load_conversation
-from src.context.summarizer import summarize_conversation
+from src.context.summarizer import measure_summary_retention, summarize_conversation
 from src.evaluation.automated import run_automated_evaluation
 from src.evaluation.llm_judge import evaluate_with_judge
 from src.evaluation.metrics import check_inter_rater_reliability
@@ -91,17 +91,37 @@ class ExperimentRunner:
         self._contexts_dir = contexts_dir
         self._results_dir = results_dir
 
-        self._subject_client = AnthropicClient(
+        self._subject_client = create_client(
+            backend=config.subject_backend,
             model=config.subject_model,
+            base_url=config.subject_base_url,
+            api_key=config.subject_api_key,
             max_output_tokens=config.max_output_tokens,
+            temperature=config.subject_temperature,
             use_cache=config.use_prompt_caching,
             use_batch=config.use_batch_api,
         )
-        self._judge_client = AnthropicClient(
+        self._judge_client = create_client(
+            backend=config.judge_backend,
             model=config.judge_model,
+            base_url=config.judge_base_url,
+            api_key=config.judge_api_key,
             max_output_tokens=2048,
-            use_cache=config.use_prompt_caching,
+            temperature=config.judge_temperature,
         )
+
+        # Summarizer: use dedicated client if configured, else reuse subject
+        if config.summarizer_backend and config.summarizer_model:
+            self._summarizer_client = create_client(
+                backend=config.summarizer_backend,
+                model=config.summarizer_model,
+                base_url=config.summarizer_base_url,
+                api_key=config.summarizer_api_key,
+                max_output_tokens=2048,
+                temperature=config.summarizer_temperature,
+            )
+        else:
+            self._summarizer_client = self._subject_client
 
         self._single_executor = SingleAgentExecutor(self._subject_client)
         self._multi_executor = MultiAgentExecutor(self._subject_client)
@@ -129,9 +149,43 @@ class ExperimentRunner:
 
         conversation = load_conversation(conversation_path)
         summary = await summarize_conversation(
-            self._subject_client,
+            self._summarizer_client,
             conversation,
         )
+
+        # Measure and log summarizer retention as a covariate
+        retention = measure_summary_retention(conversation, summary)
+        logger.info(
+            "Summary retention for %s: %.1f%% overall",
+            task.id,
+            retention.overall_retention * 100,
+        )
+        for r in retention.by_type:
+            logger.info(
+                "  %s: %.1f%% (%d keywords found)",
+                r.context_type,
+                r.retention_rate * 100,
+                r.keywords_found,
+            )
+
+        # Save retention report alongside summary
+        retention_path = self._results_dir / "summaries" / f"{task.id}_retention.json"
+        import json
+
+        retention_data = {
+            "task_id": task.id,
+            "overall_retention": retention.overall_retention,
+            "by_type": [
+                {
+                    "context_type": r.context_type,
+                    "total_messages": r.total_messages,
+                    "keywords_found": r.keywords_found,
+                    "retention_rate": r.retention_rate,
+                }
+                for r in retention.by_type
+            ],
+        }
+        retention_path.write_text(json.dumps(retention_data, indent=2))
 
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(summary)

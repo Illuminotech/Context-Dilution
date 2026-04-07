@@ -1,0 +1,68 @@
+id: parallel_transform_003
+type: parallel
+name: Add deduplication transform step
+description: |
+  The pipeline currently has no deduplication. When a data source returns
+  duplicate records (same record_id), they all pass through to output,
+  inflating aggregation metrics.
+
+  Add a DeduplicationStep class in pipeline/transform.py that:
+  1. Implements the TransformStep protocol
+  2. Removes records with duplicate record_ids, keeping the latest by timestamp
+  3. Returns new IngestRecord instances (never mutates input)
+
+  Also update the pipeline config to include a dedup_enabled flag.
+
+  Requirements:
+  - Use Protocol pattern (no ABC classes)
+  - Immutable records — create new IngestRecord instances
+  - Do NOT use pandas
+  - Do NOT add validation in the transform layer
+  - Composable with existing steps via run_pipeline
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/transform.py
+  - pipeline/config.py
+  - pipeline/ingest.py
+expected_patterns:
+  - TransformStep
+  - Protocol
+  - record_id
+  - IngestRecord
+  - frozen
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+  - validate
+ground_truth_patch: |
+  class DeduplicationStep:
+      def name(self) -> str:
+          return "deduplicate"
+
+      def apply(self, records: list[IngestRecord]) -> list[IngestRecord]:
+          seen: dict[str, IngestRecord] = {}
+          for record in records:
+              existing = seen.get(record.record_id)
+              if existing is None or record.timestamp > existing.timestamp:
+                  seen[record.record_id] = record
+          return list(seen.values())
+partitions:
+  - agent_id: a
+    description: |
+      Implement the DeduplicationStep class in pipeline/transform.py following
+      the TransformStep protocol. Keep the latest record by timestamp.
+    relevant_files:
+      - pipeline/transform.py
+      - pipeline/ingest.py
+  - agent_id: b
+    description: |
+      Add dedup_enabled flag to PipelineConfig and update validate_config
+      to handle the new option.
+    relevant_files:
+      - pipeline/config.py
+merge_instruction: |
+  Combine the DeduplicationStep with the config flag. Ensure the step
+  is only added to the pipeline when dedup_enabled is true.

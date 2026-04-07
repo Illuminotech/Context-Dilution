@@ -40,9 +40,7 @@ forbidden_patterns:
   - lru_cache
   - discount
   - GLOBAL_REORDER
-ground_truth_patch: |
-  Five function stubs with proper type hints, docstrings, and error handling.
-  Functions delegate to TransactionService and ReportingService.
+ground_truth_patch: ""
 partitions:
   - agent_id: a
     description: |

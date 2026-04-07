@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 
-from src.agents.client import AnthropicClient
+from src.agents.client import BaseClient
 from src.context.builder import build_context
 from src.models import (
     ContextCondition,
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SingleAgentExecutor:
     """Executes a task with a single agent receiving the full context."""
 
-    def __init__(self, client: AnthropicClient) -> None:
+    def __init__(self, client: BaseClient) -> None:
         self._client = client
 
     async def run(

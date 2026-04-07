@@ -8,7 +8,7 @@ This project accompanies the blog post: **[Solo, Pair, or Swarm? Context Dilutio
 
 When you work with a single AI agent, you build shared understanding over the conversation — corrections, clarifications, rejected approaches. Split that work across two agents and each inherits only a fragment. **Context dilution** is the loss of effective shared understanding that occurs when a task's context is distributed across multiple agents.
 
-This project moves that argument from intuition to data by running controlled trials across a factorial design.
+This project operationalizes that claim as a testable hypothesis and measures its effect through controlled trials across a fully crossed factorial design.
 
 ## Experimental Design
 
@@ -35,7 +35,9 @@ If context dilution is real, composite scores should degrade monotonically from 
 
 **Automated checks** (free, deterministic): syntax validity, expected/forbidden pattern matching, diff similarity to ground truth.
 
-**LLM-as-Judge** (3 blinded replicas): correctness, pattern adherence, completeness, error avoidance — each scored 1-5. Inter-rater reliability validated via Krippendorff's alpha (>= 0.67).
+**LLM-as-Judge** (3 blinded replicas): correctness, pattern adherence, completeness, error avoidance — each scored 1-5 with few-shot examples per level and chain-of-thought reasoning before scoring. Inter-rater reliability validated via Krippendorff's alpha (>= 0.67).
+
+**Human evaluation** (blinded, stratified sample): A human evaluator scores ~15% of trials on the same rubric, without seeing the context condition. Human scores serve as a gold set for judge calibration — Cohen's kappa, Pearson correlation, and systematic bias (MAE) are computed per dimension.
 
 ### Statistical Tests
 
@@ -63,14 +65,17 @@ cp .env.example .env  # Add your ANTHROPIC_API_KEY
 ### Running the Experiment
 
 ```bash
-# Pilot run (N=2 trials per cell, ~$1-3)
+# Pilot run (N=2 trials per cell, ~$2-5)
 python -m scripts.run_experiment --trials 2 -v
 
-# Full run (N=10 trials per cell, ~$5-15)
+# Full run (N=15 trials per cell, ~$15-30)
 python -m scripts.run_experiment
 
 # Debug a single task/condition
 python -m scripts.run_single_task sequential_debug_001 --condition full -v
+
+# Blinded human evaluation (15% stratified sample)
+python -m scripts.run_human_eval
 
 # Re-run analysis on saved results
 python -m scripts.analyze_results
@@ -92,7 +97,7 @@ ruff format src/ tests/              # Format
 ```
 ├── config/
 │   ├── experiment.yaml              # Master config (models, trials, budget)
-│   └── tasks/                       # 6 task definitions (2 per task type)
+│   └── tasks/                       # 12 task definitions (4 per task type)
 ├── contexts/
 │   ├── codebases/                   # 2 synthetic Python projects (~500 LOC each)
 │   └── conversations/               # 2 x 20-message conversation histories
@@ -110,16 +115,55 @@ ruff format src/ tests/              # Format
 └── tests/                           # Test suite mirroring src/
 ```
 
+## Model Configuration
+
+Three LLM roles are independently configurable — each can use a different backend and model:
+
+| Role | Purpose | Default | Recommended |
+|------|---------|---------|-------------|
+| **Subject** | Model under test | Claude Haiku 3.5 (Anthropic) | Any model you want to study |
+| **Judge** | Evaluates outputs | Llama 3.1 70B (local/Ollama) | Different family from subject |
+| **Summarizer** | Generates conversation summaries | Reuses subject | Any capable model |
+
+Supported backends:
+- `anthropic` — Claude models via the Anthropic API
+- `openai` — Local models via Ollama, vLLM, LM Studio, llama.cpp (zero cost)
+- `openai-cloud` — OpenAI cloud API (GPT models)
+
+Edit `config/experiment.yaml` to configure:
+
+```yaml
+subject_backend: anthropic
+subject_model: claude-haiku-4-5-20251001
+
+judge_backend: openai
+judge_model: llama3.1:70b
+judge_base_url: http://localhost:11434/v1
+```
+
+Using a local model for judging eliminates same-family bias and reduces cost to near zero for evaluation.
+
 ## Cost
 
-The experiment is designed for cost efficiency:
+With the default configuration (Claude Haiku subject + local judge):
 
-- **Subject model**: Claude Haiku 3.5 (~5x cheaper than Sonnet)
-- **Batch API**: 50% discount on all non-interactive calls
-- **Prompt caching**: 90% read savings on repeated system prompts
+- **Subject calls**: ~$10-20 at batch pricing for N=15
+- **Judge calls**: Free (local model)
 - **Budget guard**: execution halts if cost exceeds `budget_limit_usd` in config
 
-Estimated cost: **$5-15** for a full N=10 run (240 experimental + 240 merge + ~720 judge calls).
+Estimated cost: **$10-20** for a full N=15 run. Using a local subject model brings this to **$0**.
+
+## Limitations
+
+This is a research-grade pilot study. The following threats to validity should be considered when interpreting results:
+
+**Synthetic context.** The codebases and conversations are hand-crafted to cleanly embed specific context types (corrections, rejections, decisions, clarifications). Real conversations are messier — context signals overlap, corrections are implicit, and relevance is ambiguous. This likely inflates the measured effect size by providing cleaner dilution signals than would occur in practice.
+
+**Summarizer confound.** The "summarized" condition depends on summarizer quality. If the summarizer systematically drops certain context types (e.g., rejections), then the summarized condition measures summarizer quality conflated with dilution. Summarizer retention is measured as a covariate (keyword retention per context type) to make this confound quantifiable. The summarizer model is independently configurable to isolate this variable.
+
+**Judge calibration.** While the judge model defaults to a different family (Llama via Ollama) to avoid same-family bias, LLM judges are inherently noisy on individual items. A blinded human evaluation gold set (15% of trials) measures judge-human agreement per rubric dimension, but the human sample is small and subject to its own biases. Trust aggregate trends, not individual scores.
+
+**Single model per run.** Each experiment run tests a single subject model. The magnitude and pattern of context dilution may differ across model families, architectures, or context window sizes. The configuration makes it straightforward to repeat the experiment with different models.
 
 ## Results
 

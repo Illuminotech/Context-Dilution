@@ -1,0 +1,70 @@
+id: sequential_nullcheck_003
+type: sequential
+name: Fix null product in order fulfillment
+description: |
+  The fulfill_order method in services/transaction.py does not verify that all
+  OrderItems still reference valid products before marking the order as fulfilled.
+  If a product was deleted between order creation and fulfillment, calling
+  order.total will raise an AttributeError on item.product.price.
+
+  Add a pre-fulfillment validation step that checks all items reference existing
+  products and raises ValueError with the invalid product IDs if any are missing.
+
+  Requirements:
+  - Use SQLAlchemy ORM (no raw SQL)
+  - Maintain the observer pattern — on_order_fulfilled should only fire after
+    successful validation
+  - Do NOT add caching to the transaction layer
+  - 'User' means the Customer model
+  - Use unit_price from OrderItem, not Product.price, for the total calculation
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - services/transaction.py
+  - models/stock.py
+expected_patterns:
+  - fulfill_order
+  - ValueError
+  - product
+  - _session.get
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - "@cache"
+  - lru_cache
+ground_truth_patch: |
+  def fulfill_order(self, order_id: int) -> Order:
+      order = self._session.get(Order, order_id)
+      if order is None:
+          raise ValueError(f"Order not found: {order_id}")
+      if order.status != "pending":
+          raise ValueError(f"Cannot fulfill order {order_id} with status '{order.status}'")
+
+      missing = []
+      for item in order.items:
+          product = self._session.get(Product, item.product_id)
+          if product is None:
+              missing.append(item.product_id)
+      if missing:
+          raise ValueError(f"Cannot fulfill order {order_id}: products not found: {missing}")
+
+      order.status = "fulfilled"
+      self._session.flush()
+      self._notify("on_order_fulfilled", order=order)
+      return order
+partitions:
+  - agent_id: a
+    description: |
+      Identify the validation gap in fulfill_order and add product existence checks
+      before changing order status.
+    relevant_files:
+      - services/transaction.py
+  - agent_id: b
+    description: |
+      Review the Order/OrderItem/Product model relationships to understand how
+      items reference products and what happens when products are missing.
+    relevant_files:
+      - models/stock.py
+merge_instruction: |
+  Combine the model analysis with the fulfillment fix. Ensure the validation
+  check happens before the status change and observer notification.

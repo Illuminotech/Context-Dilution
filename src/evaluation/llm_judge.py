@@ -7,7 +7,7 @@ import json
 import logging
 import statistics
 
-from src.agents.client import AnthropicClient
+from src.agents.client import BaseClient
 from src.evaluation.rubric import JUDGE_SYSTEM_PROMPT, build_judge_prompt
 from src.models import RubricScores
 
@@ -56,7 +56,7 @@ def compute_mean_rubric(scores: list[RubricScores]) -> RubricScores:
 
 
 async def evaluate_with_judge(
-    client: AnthropicClient,
+    client: BaseClient,
     task_description: str,
     codebase_context: str,
     output: str,

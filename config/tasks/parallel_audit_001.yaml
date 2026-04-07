@@ -33,9 +33,35 @@ forbidden_patterns:
   - ABC
   - abstractmethod
 ground_truth_patch: |
-  In validate_record: add checks for empty record ID, future timestamp, and
-  negative value. Each raises ValidationError with descriptive message.
-  Add summary() method to IngestStats returning a dict.
+  def validate_record(raw: dict[str, Any], source_name: str, index: int) -> IngestRecord:
+      for f in REQUIRED_FIELDS:
+          if f not in raw:
+              raise ValidationError(source_name, index, f"Missing required field: {f}")
+
+      record_id = str(raw["id"])
+      if not record_id.strip():
+          raise ValidationError(source_name, index, "Record ID must be non-empty")
+
+      if not isinstance(raw["value"], (int, float)):
+          raise ValidationError(source_name, index, f"'value' must be numeric, got {type(raw['value']).__name__}")
+
+      if raw["value"] < 0:
+          raise ValidationError(source_name, index, f"'value' must be non-negative, got {raw['value']}")
+
+      try:
+          ts = datetime.fromisoformat(raw["timestamp"]) if isinstance(raw["timestamp"], str) else raw["timestamp"]
+      except (ValueError, TypeError) as e:
+          raise ValidationError(source_name, index, f"Invalid timestamp: {e}") from e
+
+      if ts > datetime.now():
+          raise ValidationError(source_name, index, f"Timestamp must not be in the future: {ts}")
+
+      return IngestRecord(
+          source=source_name,
+          timestamp=ts,
+          payload=raw,
+          record_id=record_id,
+      )
 partitions:
   - agent_id: a
     description: |

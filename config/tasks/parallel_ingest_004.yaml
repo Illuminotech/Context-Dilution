@@ -1,0 +1,91 @@
+id: parallel_ingest_004
+type: parallel
+name: Add retry logic to source ingestion
+description: |
+  The ingest_from_source function makes a single call to source.fetch() with
+  no error handling. If the source raises a transient error (timeout, connection
+  reset), the entire ingestion fails.
+
+  Add retry logic to ingest_from_source that:
+  1. Retries up to source.retry_count times on transient errors
+  2. Uses exponential backoff (1s, 2s, 4s...)
+  3. Records retry attempts in IngestStats.errors
+  4. Raises after exhausting retries with a descriptive message
+
+  Also add a timeout_seconds field usage to the fetch call metadata in IngestStats.
+
+  Requirements:
+  - Validation stays in the ingest layer only
+  - Use IngestRecord dataclass (frozen, immutable)
+  - Use Protocol pattern for interfaces (no ABC)
+  - Do NOT use pandas
+  - Do NOT add retry logic anywhere except the ingest layer
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/ingest.py
+  - pipeline/config.py
+expected_patterns:
+  - retry
+  - IngestStats
+  - ValidationError
+  - SourceConfig
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+ground_truth_patch: |
+  def ingest_from_source(
+      source: DataSource,
+      query: dict[str, Any],
+      retry_count: int = 3,
+  ) -> tuple[list[IngestRecord], IngestStats]:
+      stats = IngestStats(source=source.name())
+      records: list[IngestRecord] = []
+
+      last_error: Exception | None = None
+      for attempt in range(retry_count):
+          try:
+              raw_data = source.fetch(query)
+              last_error = None
+              break
+          except Exception as e:
+              last_error = e
+              stats.errors.append(f"Fetch attempt {attempt + 1} failed: {e}")
+              if attempt < retry_count - 1:
+                  import time
+                  time.sleep(2 ** attempt)
+      else:
+          raise RuntimeError(
+              f"Failed to fetch from {source.name()} after {retry_count} attempts: {last_error}"
+          )
+
+      stats.total_fetched = len(raw_data)
+
+      for i, raw in enumerate(raw_data):
+          try:
+              record = validate_record(raw, source.name(), i)
+              records.append(record)
+              stats.valid += 1
+          except ValidationError as e:
+              stats.invalid += 1
+              stats.errors.append(str(e))
+
+      return records, stats
+partitions:
+  - agent_id: a
+    description: |
+      Add retry logic with exponential backoff to ingest_from_source.
+      Record retry attempts in IngestStats.errors.
+    relevant_files:
+      - pipeline/ingest.py
+  - agent_id: b
+    description: |
+      Review SourceConfig to understand retry_count and timeout_seconds
+      configuration. Ensure config validation covers the new usage.
+    relevant_files:
+      - pipeline/config.py
+merge_instruction: |
+  Combine the retry logic with the config integration. Ensure retry_count
+  from SourceConfig is used by ingest_from_source.

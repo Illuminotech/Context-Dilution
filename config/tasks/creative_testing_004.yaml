@@ -1,0 +1,62 @@
+id: creative_testing_004
+type: creative
+name: Design test harness for inventory app
+description: |
+  Design a test harness module for the inventory application that provides:
+
+  1. Factory functions for creating test Customer, Product, Order, and OrderItem
+     instances with sensible defaults and override capabilities
+  2. A FakeSession class that implements enough of the SQLAlchemy Session interface
+     to support TransactionService without a real database
+  3. A FakeObserver that records all events for assertion in tests
+  4. Helper functions for common test scenarios (create order with N items,
+     set up low-stock product, etc.)
+
+  Write the module with typed classes and function stubs.
+
+  Requirements:
+  - Reference Customer model (business term 'User')
+  - Use SQLAlchemy ORM patterns (no raw SQL)
+  - Follow observer pattern — FakeObserver implements OrderEventObserver protocol
+  - Do NOT add caching to any test utilities
+  - Do NOT add a discount field
+  - Per-product reorder_level, not a global constant
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - models/stock.py
+  - services/transaction.py
+  - events/notifications.py
+  - utils/helpers.py
+expected_patterns:
+  - Customer
+  - Product
+  - Order
+  - OrderEventObserver
+  - TransactionService
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - "@cache"
+  - lru_cache
+  - discount
+  - GLOBAL_REORDER
+ground_truth_patch: ""
+partitions:
+  - agent_id: a
+    description: |
+      Design factory functions for Customer, Product, Order, and OrderItem.
+      Design the FakeSession class with get, add, flush, and query support.
+    relevant_files:
+      - models/stock.py
+      - services/transaction.py
+  - agent_id: b
+    description: |
+      Design the FakeObserver class implementing OrderEventObserver protocol.
+      Design helper functions for common test scenarios.
+    relevant_files:
+      - events/notifications.py
+      - utils/helpers.py
+merge_instruction: |
+  Combine factories, FakeSession, FakeObserver, and helpers into a single
+  coherent test harness module. Ensure FakeSession works with TransactionService.

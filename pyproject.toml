@@ -19,6 +19,7 @@ dependencies = [
     "seaborn>=0.13",
     "click>=8.1",
     "python-dotenv>=1.0",
+    "openai>=1.0",
 ]
 
 [project.optional-dependencies]

@@ -64,12 +64,13 @@ class TestTokenUsage:
 
 
 class TestAutomatedScores:
-    def test_composite_perfect(self) -> None:
+    def test_composite_perfect_with_ground_truth(self) -> None:
         scores = AutomatedScores(
             syntax_valid=True,
             expected_patterns_found=1.0,
             forbidden_patterns_absent=1.0,
             diff_similarity=1.0,
+            has_ground_truth=True,
         )
         assert scores.composite == 1.0
 
@@ -79,6 +80,7 @@ class TestAutomatedScores:
             expected_patterns_found=0.0,
             forbidden_patterns_absent=0.0,
             diff_similarity=0.0,
+            has_ground_truth=True,
         )
         assert scores.composite == 0.0
 
@@ -88,8 +90,28 @@ class TestAutomatedScores:
             expected_patterns_found=0.5,
             forbidden_patterns_absent=1.0,
             diff_similarity=0.0,
+            has_ground_truth=True,
         )
         expected = 0.25 * 1.0 + 0.25 * 0.5 + 0.25 * 1.0 + 0.25 * 0.0
+        assert scores.composite == pytest.approx(expected)
+
+    def test_composite_without_ground_truth(self) -> None:
+        scores = AutomatedScores(
+            syntax_valid=True,
+            expected_patterns_found=1.0,
+            forbidden_patterns_absent=1.0,
+            has_ground_truth=False,
+        )
+        assert scores.composite == pytest.approx(1.0)
+
+    def test_composite_without_ground_truth_mixed(self) -> None:
+        scores = AutomatedScores(
+            syntax_valid=True,
+            expected_patterns_found=0.5,
+            forbidden_patterns_absent=1.0,
+            has_ground_truth=False,
+        )
+        expected = (1.0 + 0.5 + 1.0) / 3.0
         assert scores.composite == pytest.approx(expected)
 
 
@@ -183,7 +205,7 @@ class TestTaskDefinition:
 class TestExperimentConfig:
     def test_defaults(self) -> None:
         config = ExperimentConfig()
-        assert config.trials_per_cell == 10
-        assert config.budget_limit_usd == 20.0
+        assert config.trials_per_cell == 15
+        assert config.budget_limit_usd == 30.0
         assert len(config.context_conditions) == 4
         assert len(config.agent_configs) == 2

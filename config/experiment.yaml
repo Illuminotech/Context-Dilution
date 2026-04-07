@@ -1,12 +1,42 @@
 experiment_name: context_dilution_v1
+
+# Subject model — the model being tested for context dilution
+# Backends: "anthropic", "openai" (local via Ollama/vLLM), "openai-cloud"
+subject_backend: anthropic
 subject_model: claude-haiku-4-5-20251001
-judge_model: claude-sonnet-4-6-20250514
-trials_per_cell: 10
+subject_base_url: ""    # not needed for anthropic
+subject_api_key: ""     # uses ANTHROPIC_API_KEY env var
+
+# Judge model — evaluates outputs (use a DIFFERENT family to avoid same-family bias)
+# Default: local Llama via Ollama for cross-family judging at zero cost
+judge_backend: openai
+judge_model: llama3.1:70b
+judge_base_url: http://localhost:11434/v1
+judge_api_key: ollama
+
+# Summarizer model — generates conversation summaries for the "summarized" condition
+# Leave blank to reuse the subject model
+summarizer_backend: ""
+summarizer_model: ""
+summarizer_base_url: ""
+summarizer_api_key: ""
+
+# Temperature — set to 0 for reproducibility
+subject_temperature: 0.0
+judge_temperature: 0.0
+summarizer_temperature: 0.0
+
+# Trial design
+trials_per_cell: 15
 judge_replicas: 3
-budget_limit_usd: 20.0
+budget_limit_usd: 30.0
+
+# API features (anthropic backend only)
 use_batch_api: true
 use_prompt_caching: true
 max_output_tokens: 4096
+
+# Factorial design
 agent_configs:
   - single
   - multi_2

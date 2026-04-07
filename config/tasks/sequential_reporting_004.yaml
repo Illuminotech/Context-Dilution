@@ -1,0 +1,76 @@
+id: sequential_reporting_004
+type: sequential
+name: Fix sales report date filtering
+description: |
+  The sales_by_product method in services/reporting.py filters by Order.created_at
+  but does not exclude cancelled orders from the revenue calculation. A cancelled
+  order with 10 items at $50 each inflates the revenue by $500 even though no
+  money changed hands.
+
+  Fix sales_by_product to filter out cancelled orders. Also fix the query to
+  use OrderItem.unit_price (the frozen price at order time) rather than joining
+  to get Product.price (the current price).
+
+  Requirements:
+  - Use SQLAlchemy ORM with func for aggregation
+  - Reference Customer model (business term 'User')
+  - Use unit_price from OrderItem, not current Product.price
+  - Do NOT add a discount field on Order
+  - Per-product reorder_level, not a global constant
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - services/reporting.py
+  - models/stock.py
+expected_patterns:
+  - func.sum
+  - unit_price
+  - status
+  - cancelled
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - Product.price
+  - discount
+ground_truth_patch: |
+  def sales_by_product(
+      self, start_date: datetime | None = None, end_date: datetime | None = None
+  ) -> list[dict[str, Any]]:
+      query = (
+          self._session.query(
+              Product.sku,
+              Product.name,
+              func.sum(OrderItem.quantity).label("total_sold"),
+              func.sum(OrderItem.quantity * OrderItem.unit_price).label("revenue"),
+          )
+          .join(OrderItem, Product.id == OrderItem.product_id)
+          .join(Order, OrderItem.order_id == Order.id)
+          .filter(Order.status != "cancelled")
+      )
+
+      if start_date:
+          query = query.filter(Order.created_at >= start_date)
+      if end_date:
+          query = query.filter(Order.created_at <= end_date)
+
+      rows = query.group_by(Product.sku, Product.name).all()
+      return [
+          {"sku": r.sku, "name": r.name, "total_sold": r.total_sold, "revenue": float(r.revenue)}
+          for r in rows
+      ]
+partitions:
+  - agent_id: a
+    description: |
+      Review the Order model status field and OrderItem.unit_price to understand
+      the data model for price snapshots and order lifecycle.
+    relevant_files:
+      - models/stock.py
+  - agent_id: b
+    description: |
+      Fix sales_by_product to exclude cancelled orders and use unit_price
+      instead of Product.price for revenue calculation.
+    relevant_files:
+      - services/reporting.py
+merge_instruction: |
+  Combine the model understanding with the reporting query fix. Ensure the
+  fix filters by status and uses the correct price field.

@@ -38,9 +38,7 @@ forbidden_patterns:
   - abstractmethod
   - database
   - sqlalchemy
-ground_truth_patch: |
-  New monitoring module with: MetricRecord (frozen dataclass), MonitoringService
-  (tracks rates and times), AlertHandler (protocol), health_check function.
+ground_truth_patch: ""
 partitions:
   - agent_id: a
     description: |

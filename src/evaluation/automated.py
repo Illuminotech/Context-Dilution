@@ -56,9 +56,13 @@ def run_automated_evaluation(
     task: TaskDefinition,
 ) -> AutomatedScores:
     """Run all automated checks on a trial output."""
+    has_gt = bool(task.ground_truth_patch.strip())
     return AutomatedScores(
         syntax_valid=check_syntax(output),
         expected_patterns_found=check_expected_patterns(output, task.expected_patterns),
         forbidden_patterns_absent=check_forbidden_patterns(output, task.forbidden_patterns),
-        diff_similarity=compute_diff_similarity(output, task.ground_truth_patch),
+        diff_similarity=compute_diff_similarity(output, task.ground_truth_patch)
+        if has_gt
+        else 0.0,
+        has_ground_truth=has_gt,
     )
