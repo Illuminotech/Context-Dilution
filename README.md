@@ -37,7 +37,7 @@ If context dilution is real, composite scores should degrade monotonically from 
 
 **LLM-as-Judge** (3 blinded replicas): correctness, pattern adherence, completeness, error avoidance — each scored 1-5 with few-shot examples per level and chain-of-thought reasoning before scoring. Inter-rater reliability validated via Krippendorff's alpha (>= 0.67).
 
-**Human evaluation** (blinded, stratified sample): A human evaluator scores ~15% of trials on the same rubric, without seeing the context condition. Human scores serve as a gold set for judge calibration — Cohen's kappa, Pearson correlation, and systematic bias (MAE) are computed per dimension.
+**Human evaluation** (post-experiment): After the experiment completes, a blinded CLI interface (`run_human_eval`) presents a stratified ~15% sample of trials for human scoring on the same rubric, without revealing the context condition. Human scores serve as a gold set for judge calibration — Cohen's kappa, Pearson correlation, and systematic bias (MAE) are computed per dimension.
 
 ### Statistical Tests
 
