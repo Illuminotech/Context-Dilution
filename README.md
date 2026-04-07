@@ -60,39 +60,59 @@ If context dilution is real, composite scores should degrade monotonically from 
 git clone git@github.com:Illuminotech/Context-Dilution.git
 cd Context-Dilution
 pip install -e ".[dev]"
+```
 
-# For local models (default config)
-ollama pull qwen2.5-coder:14b   # subject
-ollama pull qwen2.5:32b          # judge
-ollama pull llama3.2              # summarizer
+**For local models** (default configuration, free):
+```bash
+ollama pull qwen2.5-coder:14b   # subject model
+ollama pull qwen2.5:32b          # judge model
+ollama pull llama3.2              # summarizer model
+```
+
+**For Anthropic API** (cloud, paid):
+```bash
 cp .env.example .env  # Add your ANTHROPIC_API_KEY
+# Then edit config/experiment.yaml to set subject_backend: anthropic
 ```
 
 ### Running the Experiment
 
 ```bash
-# Pilot run (N=2 trials per cell, ~$2-5)
-python -m scripts.run_experiment --trials 2 -v
+# Clear any previous results
+rm -rf results/
 
-# Full run (N=15 trials per cell, ~$15-30)
-python -m scripts.run_experiment
+# Pilot run (N=1 trial per cell, ~2-3 hours locally)
+python3.11 -m scripts.run_experiment --trials 1 -v
+
+# Full run (N=15 trials per cell)
+python3.11 -m scripts.run_experiment
+
+# Run in the background
+nohup python3.11 -m scripts.run_experiment --trials 1 -v > experiment.log 2>&1 &
+
+# Monitor progress
+tail -f experiment.log | grep "score="
 
 # Debug a single task/condition
-python -m scripts.run_single_task sequential_debug_001 --condition full -v
+python3.11 -m scripts.run_single_task sequential_debug_001 --condition full -v
 
 # Blinded human evaluation (15% stratified sample)
-python -m scripts.run_human_eval
+python3.11 -m scripts.run_human_eval
 
 # Re-run analysis on saved results
-python -m scripts.analyze_results
+python3.11 -m scripts.analyze_results
 ```
 
-Results are written to `results/` — raw API responses, scored CSVs, figures, and a markdown report.
+Results are written to `results/`:
+- `results/report.md` — full markdown report with statistics
+- `results/figures/` — visualization PNGs
+- `results/scored/all_trials.csv` — raw scored data
+- `results/summaries/` — cached summaries and retention analysis
 
 ### Development
 
 ```bash
-pytest tests/                        # Run tests (99 tests)
+pytest tests/                        # Run tests (117 tests)
 mypy src/ tests/ --strict            # Type check
 ruff check src/ tests/               # Lint
 ruff format src/ tests/              # Format
@@ -127,37 +147,41 @@ Three LLM roles are independently configurable — each can use a different back
 
 | Role | Purpose | Default | Recommended |
 |------|---------|---------|-------------|
-| **Subject** | Model under test | Claude Haiku 3.5 (Anthropic) | Any model you want to study |
-| **Judge** | Evaluates outputs | Llama 3.1 70B (local/Ollama) | Different family from subject |
-| **Summarizer** | Generates conversation summaries | Reuses subject | Any capable model |
+| **Subject** | Model under test | Qwen 2.5 Coder 14B (local) | Any model you want to study |
+| **Judge** | Evaluates outputs | Qwen 2.5 32B (local) | Different family from subject |
+| **Summarizer** | Generates conversation summaries | Llama 3.2 3B (local) | Any capable model |
 
 Supported backends:
-- `anthropic` — Claude models via the Anthropic API
 - `openai` — Local models via Ollama, vLLM, LM Studio, llama.cpp (zero cost)
+- `anthropic` — Claude models via the Anthropic API
 - `openai-cloud` — OpenAI cloud API (GPT models)
 
 Edit `config/experiment.yaml` to configure:
 
 ```yaml
-subject_backend: anthropic
-subject_model: claude-haiku-4-5-20251001
+subject_backend: openai
+subject_model: qwen2.5-coder:14b
 
 judge_backend: openai
-judge_model: llama3.1:70b
+judge_model: qwen2.5:32b
 judge_base_url: http://localhost:11434/v1
 ```
 
 Using a local model for judging eliminates same-family bias and reduces cost to near zero for evaluation.
 
-## Cost
+## Cost and Runtime
 
-With the default configuration (Claude Haiku subject + local judge):
+**Local models (default):** $0 — all inference runs on your machine via Ollama.
 
-- **Subject calls**: ~$10-20 at batch pricing for N=15
-- **Judge calls**: Free (local model)
-- **Budget guard**: execution halts if cost exceeds `budget_limit_usd` in config
+| Run | Cells | Est. Time (M1 Max) |
+|-----|-------|---------------------|
+| Pilot N=1 | 84 | ~2-3 hours |
+| Pilot N=2 | 168 | ~5-6 hours |
+| Full N=15 | 1,260 | ~40-50 hours |
 
-Estimated cost: **$10-20** for a full N=15 run. Using a local subject model brings this to **$0**.
+Times assume Apple Silicon with GPU (Metal). CPU-only will be 10-20x slower.
+
+**Anthropic API:** ~$10-20 for a full N=15 run at batch pricing. A `budget_limit_usd` field in the config halts execution if exceeded.
 
 ## Limitations
 
