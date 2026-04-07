@@ -77,29 +77,25 @@ cp .env.example .env  # Add your ANTHROPIC_API_KEY
 
 ### Running the Experiment
 
+A convenience script wraps all commands:
+
 ```bash
-# Clear any previous results
-rm -rf results/
+./run.sh setup                # install deps + pull Ollama models
+./run.sh pilot                # N=1 pilot (~2-3 hours on M1 Max)
+./run.sh pilot --background   # run in background
+./run.sh run 2                # N=2 trials per cell
+./run.sh status               # check progress
+./run.sh evaluate             # blinded human evaluation (post-experiment)
+./run.sh analyze              # re-run analysis and regenerate report
+./run.sh clean                # clear all results
+```
 
-# Pilot run (N=1 trial per cell, ~2-3 hours locally)
+Or run the Python scripts directly:
+
+```bash
 python3.11 -m scripts.run_experiment --trials 1 -v
-
-# Full run (N=15 trials per cell)
-python3.11 -m scripts.run_experiment
-
-# Run in the background
-nohup python3.11 -m scripts.run_experiment --trials 1 -v > experiment.log 2>&1 &
-
-# Monitor progress
-tail -f experiment.log | grep "score="
-
-# Debug a single task/condition
 python3.11 -m scripts.run_single_task sequential_debug_001 --condition full -v
-
-# Blinded human evaluation (15% stratified sample)
 python3.11 -m scripts.run_human_eval
-
-# Re-run analysis on saved results
 python3.11 -m scripts.analyze_results
 ```
 
