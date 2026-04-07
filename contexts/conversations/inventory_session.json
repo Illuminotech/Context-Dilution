@@ -1,0 +1,122 @@
+[
+  {
+    "role": "user",
+    "content": "I need help with the inventory app. The stock calculation seems off when processing orders.",
+    "context_type": null,
+    "tag": "opening"
+  },
+  {
+    "role": "assistant",
+    "content": "I'll look into the stock calculation. Can you tell me more about the expected behavior vs what you're seeing?",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "Don't use raw SQL for any database operations. We use SQLAlchemy ORM exclusively throughout this codebase.",
+    "context_type": "correction",
+    "tag": "orm_only"
+  },
+  {
+    "role": "assistant",
+    "content": "Understood — I'll use SQLAlchemy ORM for all database access, no raw SQL.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "When I say 'User' in this project, I mean the Customer model in models/stock.py, not any AuthUser or authentication user.",
+    "context_type": "clarification",
+    "tag": "user_means_customer"
+  },
+  {
+    "role": "assistant",
+    "content": "Got it — 'User' maps to the Customer class throughout this codebase.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We chose the observer pattern for all event handling in the transaction layer. See events/notifications.py for the existing observers.",
+    "context_type": "decision",
+    "tag": "observer_pattern"
+  },
+  {
+    "role": "assistant",
+    "content": "I see the observer pattern with OrderEventObserver protocol and the existing LoggingObserver and AlertObserver implementations. I'll follow this pattern for any new event handling.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We tried caching transaction results in the TransactionService but it caused race conditions with concurrent orders. We removed it completely. Do NOT re-introduce any caching in the transaction layer.",
+    "context_type": "rejection",
+    "tag": "no_transaction_cache"
+  },
+  {
+    "role": "assistant",
+    "content": "Noted — no caching in the transaction service layer. The race conditions with concurrent orders made it unsuitable.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "The stock adjustment needs to handle bulk operations — when a large order comes in, we need to adjust stock for all items atomically.",
+    "context_type": "clarification",
+    "tag": "atomic_bulk"
+  },
+  {
+    "role": "assistant",
+    "content": "The current create_order method handles this within a single session flush, which gives us the atomicity. I'll make sure any changes preserve this behavior.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "For reporting queries, always use SQLAlchemy's func module for aggregations. We had bugs before when people mixed raw SQL aggregates with ORM queries.",
+    "context_type": "correction",
+    "tag": "sqlalchemy_func"
+  },
+  {
+    "role": "assistant",
+    "content": "I'll use sqlalchemy.func for all aggregate operations — func.sum, func.count, etc.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "The order total calculation should use the unit_price stored on OrderItem at time of order, not the current Product.price. This protects against price changes after ordering.",
+    "context_type": "decision",
+    "tag": "frozen_price"
+  },
+  {
+    "role": "assistant",
+    "content": "Right — the OrderItem.unit_price is the price snapshot at order time. The Order.total property already uses item.subtotal which is based on unit_price, so this is correct.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We tried adding a discount field directly on Order but decided against it. Discounts should be handled as separate OrderItem line items with negative quantities instead.",
+    "context_type": "rejection",
+    "tag": "no_discount_field"
+  },
+  {
+    "role": "assistant",
+    "content": "Understood — discounts are modeled as line items, not a field on Order. I won't add a discount column.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "One more thing — the reorder_level on Product should always be configurable per-product, never a global constant. Different products have different restock lead times.",
+    "context_type": "decision",
+    "tag": "per_product_reorder"
+  },
+  {
+    "role": "assistant",
+    "content": "The reorder_level is already a per-product column with a default of 10. I'll keep this pattern and won't introduce any global reorder threshold.",
+    "context_type": null,
+    "tag": null
+  }
+]

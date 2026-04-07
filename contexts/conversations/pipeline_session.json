@@ -1,0 +1,122 @@
+[
+  {
+    "role": "user",
+    "content": "I need help with the data pipeline app. We're having issues with data quality from our external sources.",
+    "context_type": null,
+    "tag": "opening"
+  },
+  {
+    "role": "assistant",
+    "content": "I'll look at the pipeline. What kind of data quality issues are you seeing?",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "All validation must happen at the ingestion boundary in pipeline/ingest.py. Do NOT add validation checks in the transform or output stages — if a record made it past ingestion, it's valid.",
+    "context_type": "correction",
+    "tag": "validate_at_boundary"
+  },
+  {
+    "role": "assistant",
+    "content": "Understood — validation only in the ingest layer. Transform and output can assume records are clean.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "When I say 'record' I mean an IngestRecord dataclass — not a raw dict. After ingestion, everything should be typed IngestRecord objects.",
+    "context_type": "clarification",
+    "tag": "record_means_ingestrecord"
+  },
+  {
+    "role": "assistant",
+    "content": "Got it — 'record' always means IngestRecord after the ingestion boundary.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We use the Protocol pattern from typing for all interfaces. No ABC classes. See DataSource, TransformStep, and OutputWriter.",
+    "context_type": "decision",
+    "tag": "protocol_not_abc"
+  },
+  {
+    "role": "assistant",
+    "content": "I see the protocol pattern used consistently — DataSource, TransformStep, OutputWriter. I'll follow this for any new interfaces.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We tried using pandas DataFrames for the transform stage but it added too much memory overhead for our streaming use case. We went back to plain lists of dataclasses. Do NOT introduce pandas in the pipeline code.",
+    "context_type": "rejection",
+    "tag": "no_pandas_in_pipeline"
+  },
+  {
+    "role": "assistant",
+    "content": "Noted — no pandas in the pipeline. Using lists of IngestRecord/dataclass instances for memory efficiency.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "The transform steps must be composable — you should be able to chain any combination and order of steps. The run_pipeline function handles this.",
+    "context_type": "decision",
+    "tag": "composable_transforms"
+  },
+  {
+    "role": "assistant",
+    "content": "The run_pipeline function chains steps sequentially. Each step takes and returns list[IngestRecord], making them fully composable.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "Never mutate input records in transforms. Always create new IngestRecord instances. The dataclass is frozen for this reason.",
+    "context_type": "correction",
+    "tag": "immutable_records"
+  },
+  {
+    "role": "assistant",
+    "content": "Right — IngestRecord is frozen. All transforms create new instances rather than mutating inputs.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "The outlier filter should default to 3 standard deviations. We tested with 2 SD and it was too aggressive — removed too many legitimate data points.",
+    "context_type": "rejection",
+    "tag": "3sd_not_2sd"
+  },
+  {
+    "role": "assistant",
+    "content": "3 SD is the default. Won't change it to 2 SD since that was too aggressive.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "For output, we support both JSON and CSV. JSON is the default. CSV is optional for Excel compatibility with the business team.",
+    "context_type": "decision",
+    "tag": "json_default_output"
+  },
+  {
+    "role": "assistant",
+    "content": "JSON as primary output format, CSV available as an option. Both implemented via the OutputWriter protocol.",
+    "context_type": null,
+    "tag": null
+  },
+  {
+    "role": "user",
+    "content": "We tried adding a database output writer but the schema migrations were too complex for our use case. Stick with file-based output only.",
+    "context_type": "rejection",
+    "tag": "no_db_output"
+  },
+  {
+    "role": "assistant",
+    "content": "Understood — file-based output only (JSON/CSV). No database writers.",
+    "context_type": null,
+    "tag": null
+  }
+]
