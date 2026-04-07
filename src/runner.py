@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -97,6 +98,7 @@ class ExperimentRunner:
             base_url=config.subject_base_url,
             api_key=config.subject_api_key,
             max_output_tokens=config.max_output_tokens,
+            context_window=config.context_window,
             temperature=config.subject_temperature,
             use_cache=config.use_prompt_caching,
             use_batch=config.use_batch_api,
@@ -107,6 +109,7 @@ class ExperimentRunner:
             base_url=config.judge_base_url,
             api_key=config.judge_api_key,
             max_output_tokens=2048,
+            context_window=config.context_window,
             temperature=config.judge_temperature,
         )
 
@@ -118,6 +121,7 @@ class ExperimentRunner:
                 base_url=config.summarizer_base_url,
                 api_key=config.summarizer_api_key,
                 max_output_tokens=2048,
+                context_window=config.context_window,
                 temperature=config.summarizer_temperature,
             )
         else:
@@ -168,10 +172,12 @@ class ExperimentRunner:
                 r.keywords_found,
             )
 
-        # Save retention report alongside summary
-        retention_path = self._results_dir / "summaries" / f"{task.id}_retention.json"
-        import json
+        # Save summary and retention report
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(summary)
 
+        retention_path = self._results_dir / "summaries" / f"{task.id}_retention.json"
+        retention_path.parent.mkdir(parents=True, exist_ok=True)
         retention_data = {
             "task_id": task.id,
             "overall_retention": retention.overall_retention,
@@ -187,8 +193,6 @@ class ExperimentRunner:
         }
         retention_path.write_text(json.dumps(retention_data, indent=2))
 
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        cache_path.write_text(summary)
         return summary
 
     async def _run_single_trial(
@@ -264,6 +268,9 @@ class ExperimentRunner:
 
             for condition in self._config.context_conditions:
                 for agent_config in self._config.agent_configs:
+                    # Partitioned is only meaningful for multi-agent
+                    if condition == ContextCondition.PARTITIONED and agent_config == "single":
+                        continue
                     for trial_num in range(self._config.trials_per_cell):
                         logger.info(
                             "Trial %d/%d: task=%s condition=%s agent=%s",

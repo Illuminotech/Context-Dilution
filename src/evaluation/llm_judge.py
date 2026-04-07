@@ -18,19 +18,44 @@ class JudgeError(Exception):
     """Raised when LLM judge evaluation fails."""
 
 
+def _extract_json_object(text: str) -> str:
+    """Extract the first JSON object from text that may contain surrounding prose."""
+    # Try the whole string first
+    text = text.strip()
+
+    # Strip markdown code fences
+    if "```" in text:
+        lines = text.split("\n")
+        text = "\n".join(line for line in lines if not line.startswith("```"))
+        text = text.strip()
+
+    # Find the first { ... } block containing our expected keys
+    brace_start = text.find("{")
+    if brace_start == -1:
+        return text
+
+    # Walk forward to find the matching closing brace
+    depth = 0
+    for i in range(brace_start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[brace_start : i + 1]
+
+    # No matching brace found, return from first brace onward
+    return text[brace_start:]
+
+
 def _parse_judge_response(text: str) -> RubricScores:
     """Parse the judge's JSON response into RubricScores."""
-    # Extract JSON from possible markdown wrapping
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.split("\n")
-        json_lines = [line for line in lines if not line.startswith("```")]
-        text = "\n".join(json_lines)
+    json_str = _extract_json_object(text)
 
     try:
-        data = json.loads(text)
+        data = json.loads(json_str)
     except json.JSONDecodeError as e:
-        raise JudgeError(f"Judge returned invalid JSON: {e}\nResponse: {text[:200]}") from e
+        raise JudgeError(f"Judge returned invalid JSON: {e}\nResponse: {text[:500]}") from e
 
     try:
         return RubricScores(

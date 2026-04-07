@@ -26,7 +26,7 @@ This project operationalizes that claim as a testable hypothesis and measures it
 |-----------|--------------------------|
 | **Full** | Complete 20-message conversation history + all codebase files |
 | **Summarized** | LLM-generated summary of conversation + all files |
-| **Partitioned** | Only the agent's assigned files, no conversation history |
+| **Partitioned** | Only the agent's assigned files, no conversation history (multi-agent only) |
 | **Minimal** | Task description only — no files, no history |
 
 If context dilution is real, composite scores should degrade monotonically from full to minimal.
@@ -51,7 +51,8 @@ If context dilution is real, composite scores should degrade monotonically from 
 ### Prerequisites
 
 - Python 3.11+
-- An [Anthropic API key](https://console.anthropic.com/)
+- [Ollama](https://ollama.com/download) (the macOS .app, **not** the Homebrew version — Homebrew lacks GPU/Metal support)
+- Or an [Anthropic API key](https://console.anthropic.com/) for cloud-based runs
 
 ### Installation
 
@@ -59,6 +60,11 @@ If context dilution is real, composite scores should degrade monotonically from 
 git clone git@github.com:Illuminotech/Context-Dilution.git
 cd Context-Dilution
 pip install -e ".[dev]"
+
+# For local models (default config)
+ollama pull qwen2.5-coder:14b   # subject
+ollama pull qwen2.5:32b          # judge
+ollama pull llama3.2              # summarizer
 cp .env.example .env  # Add your ANTHROPIC_API_KEY
 ```
 

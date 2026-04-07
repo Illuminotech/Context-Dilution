@@ -106,6 +106,18 @@ class TestParseJudgeResponse:
         scores = _parse_judge_response(text)
         assert scores.correctness == 3.0
 
+    def test_json_with_surrounding_prose(self) -> None:
+        text = (
+            "Let me analyze this solution.\n\n"
+            "The code correctly aggregates quantities.\n\n"
+            '{"reasoning": "good fix", "correctness": 4, '
+            '"pattern_adherence": 5, "completeness": 3, "error_avoidance": 4}\n\n'
+            "That concludes my review."
+        )
+        scores = _parse_judge_response(text)
+        assert scores.correctness == 4.0
+        assert scores.pattern_adherence == 5.0
+
     def test_invalid_json_raises(self) -> None:
         from src.evaluation.llm_judge import JudgeError
 

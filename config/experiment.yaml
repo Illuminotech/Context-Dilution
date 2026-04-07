@@ -32,6 +32,7 @@ budget_limit_usd: 30.0
 use_batch_api: false
 use_prompt_caching: false
 max_output_tokens: 4096
+context_window: 16384  # Ollama num_ctx — must fit system + conversation + output
 
 # Factorial design
 agent_configs:

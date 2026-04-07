@@ -125,12 +125,27 @@ class MultiAgentExecutor:
             agent_ids = ["a", "b"]
 
         async def run_sub_agent(agent_id: str) -> TrialResult:
-            if condition == ContextCondition.PARTITIONED:
+            # Partitioned requires defined partitions; fall back to minimal
+            use_partitioned = (
+                condition == ContextCondition.PARTITIONED and len(task.partitions) > 0
+            )
+            if use_partitioned:
                 system, messages = build_context(
                     task=task,
                     condition=condition,
                     all_files=all_files,
                     agent_id=agent_id,
+                )
+            elif condition == ContextCondition.PARTITIONED:
+                # No partitions defined — give each agent minimal context
+                logger.warning(
+                    "Task %s has no partitions; falling back to minimal for multi-agent",
+                    task.id,
+                )
+                system, messages = build_context(
+                    task=task,
+                    condition=ContextCondition.MINIMAL,
+                    all_files=all_files,
                 )
             else:
                 system, messages = build_context(

@@ -247,6 +247,7 @@ class OpenAICompatibleClient(BaseClient):
         base_url: str = "http://localhost:11434/v1",
         api_key: str = "ollama",
         max_output_tokens: int = 4096,
+        context_window: int = 16384,
         temperature: float = 0.0,
         is_local: bool = True,
         max_retries: int = 3,
@@ -267,6 +268,7 @@ class OpenAICompatibleClient(BaseClient):
         self._client = AsyncOpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
         self._model = model
         self._max_output_tokens = max_output_tokens
+        self._context_window = context_window
         self._temperature = temperature
         self._is_local = is_local
         self._max_retries = max_retries
@@ -286,10 +288,15 @@ class OpenAICompatibleClient(BaseClient):
 
         for attempt in range(self._max_retries):
             try:
+                # Ollama uses num_ctx to set context window size
+                extra: dict[str, Any] = {}
+                if self._is_local:
+                    extra["extra_body"] = {"options": {"num_ctx": self._context_window}}
                 response = await self._client.chat.completions.create(
                     model=self._model,
                     messages=full_messages,  # type: ignore[arg-type]
                     max_tokens=self._max_output_tokens,
+                    **extra,
                     temperature=self._temperature,
                 )
                 text = response.choices[0].message.content or ""
@@ -326,6 +333,7 @@ def create_client(
     base_url: str = "",
     api_key: str = "",
     max_output_tokens: int = 4096,
+    context_window: int = 16384,
     temperature: float = 0.0,
     use_cache: bool = True,
     use_batch: bool = False,
@@ -338,6 +346,7 @@ def create_client(
         base_url: API base URL (required for openai backend)
         api_key: API key (optional for local servers)
         max_output_tokens: Maximum output tokens
+        context_window: Context window size for local models (Ollama num_ctx)
         temperature: Sampling temperature
         use_cache: Enable prompt caching (Anthropic only)
         use_batch: Enable batch API (Anthropic only)
@@ -356,6 +365,7 @@ def create_client(
             base_url=base_url or "http://localhost:11434/v1",
             api_key=api_key or ("ollama" if backend == "openai" else ""),
             max_output_tokens=max_output_tokens,
+            context_window=context_window,
             temperature=temperature,
             is_local=(backend == "openai"),
         )

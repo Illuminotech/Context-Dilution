@@ -212,6 +212,7 @@ class ExperimentConfig(BaseModel):
     use_batch_api: bool = True
     use_prompt_caching: bool = True
     max_output_tokens: int = 4096
+    context_window: int = 16384
     agent_configs: tuple[AgentConfig, ...] = ("single", "multi_2")
     context_conditions: tuple[ContextCondition, ...] = CONTEXT_CONDITION_ORDER
     task_types: tuple[TaskType, ...] = (
