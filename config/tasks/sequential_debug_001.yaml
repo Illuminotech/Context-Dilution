@@ -1,0 +1,53 @@
+id: sequential_debug_001
+type: sequential
+name: Fix stock adjustment bug
+description: |
+  The Product.adjust_stock method doesn't properly handle the case where multiple
+  order items reference the same product in a single order. When two OrderItems
+  both reference product SKU-001 with quantities 3 and 5, the stock should decrease
+  by 8 total. Fix the create_order method in services/transaction.py to handle this
+  correctly, ensuring stock validation happens against the cumulative quantity.
+
+  Requirements:
+  - Use SQLAlchemy ORM (no raw SQL)
+  - Maintain observer pattern for events
+  - Do NOT add caching to the transaction layer
+  - 'User' means the Customer model
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - models/stock.py
+  - services/transaction.py
+  - events/notifications.py
+expected_patterns:
+  - adjust_stock
+  - SQLAlchemy
+  - observer
+  - Customer
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - "@cache"
+  - lru_cache
+  - discount
+ground_truth_patch: |
+  In create_order, aggregate quantities per product_id before calling adjust_stock,
+  so stock validation sees the total deduction. Use a dict to accumulate quantities,
+  then iterate once per product.
+partitions:
+  - agent_id: a
+    description: |
+      Fix the stock model to support batch adjustments. Ensure Product.adjust_stock
+      works correctly when called with a cumulative quantity.
+    relevant_files:
+      - models/stock.py
+  - agent_id: b
+    description: |
+      Fix the transaction service to aggregate quantities per product before
+      adjusting stock. Ensure observer notifications still fire correctly.
+    relevant_files:
+      - services/transaction.py
+      - events/notifications.py
+merge_instruction: |
+  Combine the model fix with the service fix. Ensure the stock model changes
+  are compatible with how the transaction service calls adjust_stock.

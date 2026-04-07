@@ -1,0 +1,63 @@
+id: creative_api_001
+type: creative
+name: Design REST API for inventory
+description: |
+  Design a REST API module for the inventory application that exposes the following
+  endpoints as Python function stubs with type hints and docstrings:
+
+  1. GET /products — list products with optional low-stock filter
+  2. POST /orders — create a new order for a Customer
+  3. GET /orders/{order_id} — get order details
+  4. POST /orders/{order_id}/fulfill — mark order as fulfilled
+  5. GET /reports/sales — get sales report with optional date range
+
+  Write the API handler functions (no framework-specific code, just typed functions).
+  Each function should document its parameters, return type, and error cases.
+
+  Requirements:
+  - Reference Customer model (business term 'User')
+  - Use SQLAlchemy ORM concepts (no raw SQL)
+  - Follow observer pattern for order events
+  - Do NOT add caching to order operations
+  - Do NOT add a discount field on orders
+  - Per-product reorder_level, not global constant
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - models/stock.py
+  - services/transaction.py
+  - services/reporting.py
+  - events/notifications.py
+expected_patterns:
+  - Customer
+  - TransactionService
+  - ReportingService
+  - observer
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - "@cache"
+  - lru_cache
+  - discount
+  - GLOBAL_REORDER
+ground_truth_patch: |
+  Five function stubs with proper type hints, docstrings, and error handling.
+  Functions delegate to TransactionService and ReportingService.
+partitions:
+  - agent_id: a
+    description: |
+      Design the product and order endpoints (GET /products, POST /orders,
+      GET /orders/{id}, POST fulfill). Use existing models and TransactionService.
+    relevant_files:
+      - models/stock.py
+      - services/transaction.py
+  - agent_id: b
+    description: |
+      Design the reporting endpoint (GET /reports/sales) and ensure proper
+      event observer integration for order lifecycle.
+    relevant_files:
+      - services/reporting.py
+      - events/notifications.py
+merge_instruction: |
+  Combine both sets of endpoint stubs into a single coherent API module.
+  Ensure consistent error handling and type annotation style.

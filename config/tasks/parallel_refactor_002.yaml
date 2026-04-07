@@ -1,0 +1,55 @@
+id: parallel_refactor_002
+type: parallel
+name: Refactor pipeline output layer
+description: |
+  Refactor the output layer (pipeline/output.py) to add a new SummaryWriter that
+  writes a human-readable text summary of aggregation results. The writer should:
+  1. Implement the OutputWriter protocol
+  2. Format each metric as a readable line with source, metric name, and value
+  3. Include a header with timestamp and record count
+
+  Also update metrics_to_dicts to include a 'formatted_value' field that rounds
+  to 4 decimal places.
+
+  Requirements:
+  - Follow the OutputWriter Protocol pattern (no ABC)
+  - File-based output only (no database writers)
+  - JSON remains the default format
+  - Do NOT use pandas
+  - Immutable records — don't mutate inputs
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/output.py
+  - pipeline/transform.py
+expected_patterns:
+  - OutputWriter
+  - Protocol
+  - def write
+  - def name
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+  - database
+  - sqlalchemy
+ground_truth_patch: |
+  Add SummaryWriter class implementing OutputWriter protocol.
+  Update metrics_to_dicts to add formatted_value field.
+partitions:
+  - agent_id: a
+    description: |
+      Create the SummaryWriter class in pipeline/output.py that implements
+      the OutputWriter protocol and writes readable text summaries.
+    relevant_files:
+      - pipeline/output.py
+  - agent_id: b
+    description: |
+      Update metrics_to_dicts to include formatted_value and verify
+      AggregatedMetric in transform.py is compatible with the new format.
+    relevant_files:
+      - pipeline/transform.py
+merge_instruction: |
+  Combine the SummaryWriter with the metrics_to_dicts update. Ensure the
+  summary writer can consume the updated metric dict format.

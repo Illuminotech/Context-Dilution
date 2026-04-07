@@ -1,0 +1,54 @@
+id: parallel_audit_001
+type: parallel
+name: Audit pipeline validation coverage
+description: |
+  Audit the data pipeline's validation logic in pipeline/ingest.py and ensure all
+  edge cases are handled. Currently, the validate_record function checks for required
+  fields and numeric values, but doesn't validate:
+  1. Record IDs must be non-empty strings
+  2. Timestamps must not be in the future
+  3. Values must be non-negative
+
+  Add these three validation checks to validate_record. Also add a new validation
+  stats method to IngestStats that returns a summary dict.
+
+  Requirements:
+  - Validation happens ONLY in the ingest layer
+  - Use IngestRecord dataclass (frozen, immutable)
+  - Use Protocol pattern for interfaces (no ABC)
+  - Do NOT use pandas
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/ingest.py
+  - pipeline/transform.py
+expected_patterns:
+  - ValidationError
+  - IngestRecord
+  - Protocol
+  - frozen
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+ground_truth_patch: |
+  In validate_record: add checks for empty record ID, future timestamp, and
+  negative value. Each raises ValidationError with descriptive message.
+  Add summary() method to IngestStats returning a dict.
+partitions:
+  - agent_id: a
+    description: |
+      Add the three new validation checks to validate_record in pipeline/ingest.py:
+      non-empty ID, no future timestamps, non-negative values.
+    relevant_files:
+      - pipeline/ingest.py
+  - agent_id: b
+    description: |
+      Add a summary() method to IngestStats and verify the transform layer
+      doesn't duplicate any validation logic.
+    relevant_files:
+      - pipeline/transform.py
+merge_instruction: |
+  Combine the validation additions with the IngestStats enhancement. Verify
+  the transform layer remains validation-free.

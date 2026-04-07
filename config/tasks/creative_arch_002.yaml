@@ -1,0 +1,61 @@
+id: creative_arch_002
+type: creative
+name: Design monitoring extension for pipeline
+description: |
+  Design a monitoring and health-check module for the data pipeline that:
+
+  1. Tracks ingestion success/failure rates per source
+  2. Monitors transform step execution times
+  3. Alerts when error rates exceed a configurable threshold
+  4. Provides a health_check() function returning overall pipeline status
+
+  Write the module with typed classes, protocols, and function stubs. The design
+  should integrate with the existing pipeline architecture.
+
+  Requirements:
+  - Use Protocol pattern (no ABC classes)
+  - Track per-source statistics (IngestStats already exists — extend or compose)
+  - Validation stays in ingest layer only
+  - Do NOT use pandas for metrics collection
+  - Use frozen dataclasses for metric records
+  - File-based output only for metric export
+codebase: pipeline_app
+conversation: pipeline_session
+relevant_files:
+  - pipeline/ingest.py
+  - pipeline/transform.py
+  - pipeline/output.py
+  - pipeline/config.py
+expected_patterns:
+  - Protocol
+  - frozen
+  - IngestStats
+  - dataclass
+forbidden_patterns:
+  - pandas
+  - DataFrame
+  - ABC
+  - abstractmethod
+  - database
+  - sqlalchemy
+ground_truth_patch: |
+  New monitoring module with: MetricRecord (frozen dataclass), MonitoringService
+  (tracks rates and times), AlertHandler (protocol), health_check function.
+partitions:
+  - agent_id: a
+    description: |
+      Design the MetricRecord dataclass and MonitoringService that tracks
+      ingestion rates and transform execution times.
+    relevant_files:
+      - pipeline/ingest.py
+      - pipeline/transform.py
+  - agent_id: b
+    description: |
+      Design the AlertHandler protocol, health_check function, and file-based
+      metric export using the OutputWriter pattern.
+    relevant_files:
+      - pipeline/output.py
+      - pipeline/config.py
+merge_instruction: |
+  Combine the monitoring service with the alerting and export components.
+  Ensure MetricRecord is used consistently across both parts.

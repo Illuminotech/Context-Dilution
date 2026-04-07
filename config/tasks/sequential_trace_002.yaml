@@ -1,0 +1,48 @@
+id: sequential_trace_002
+type: sequential
+name: Trace order total miscalculation
+description: |
+  The customer_order_summary in services/reporting.py returns incorrect total_spent
+  values. The issue is that it calls order.total which iterates order.items, but
+  cancelled orders are included in the sum. Fix the reporting to exclude cancelled
+  orders from the total_spent calculation.
+
+  Requirements:
+  - Use SQLAlchemy ORM with func for any aggregation
+  - Reference Customer model (business calls them 'Users')
+  - Use unit_price from OrderItem, not current Product.price
+  - Do NOT add a discount field on Order
+codebase: inventory_app
+conversation: inventory_session
+relevant_files:
+  - services/reporting.py
+  - models/stock.py
+expected_patterns:
+  - Customer
+  - func.
+  - unit_price
+  - status
+forbidden_patterns:
+  - raw SQL
+  - execute(
+  - discount
+  - Product.price
+ground_truth_patch: |
+  In customer_order_summary, filter customer.orders to exclude cancelled orders
+  before summing totals. Use a list comprehension with status check.
+partitions:
+  - agent_id: a
+    description: |
+      Review the Order and Customer models to understand the status field and
+      total calculation. Document the data model for the other agent.
+    relevant_files:
+      - models/stock.py
+  - agent_id: b
+    description: |
+      Fix customer_order_summary in the reporting service to exclude cancelled
+      orders from total_spent. Use SQLAlchemy func for aggregation.
+    relevant_files:
+      - services/reporting.py
+merge_instruction: |
+  Combine the model understanding with the reporting fix. Ensure the fix
+  correctly references the status field from the Order model.
