@@ -1,25 +1,22 @@
 experiment_name: context_dilution_v1
 
 # Subject model — the model being tested for context dilution
-# Backends: "anthropic", "openai" (local via Ollama/vLLM), "openai-cloud"
-subject_backend: anthropic
-subject_model: claude-haiku-4-5-20251001
-subject_base_url: ""    # not needed for anthropic
-subject_api_key: ""     # uses ANTHROPIC_API_KEY env var
+subject_backend: openai
+subject_model: qwen2.5-coder:14b
+subject_base_url: http://localhost:11434/v1
+subject_api_key: ollama
 
-# Judge model — evaluates outputs (use a DIFFERENT family to avoid same-family bias)
-# Default: local Llama via Ollama for cross-family judging at zero cost
+# Judge model — evaluates outputs (different family from subject)
 judge_backend: openai
-judge_model: llama3.1:70b
+judge_model: qwen2.5:32b
 judge_base_url: http://localhost:11434/v1
 judge_api_key: ollama
 
-# Summarizer model — generates conversation summaries for the "summarized" condition
-# Leave blank to reuse the subject model
-summarizer_backend: ""
-summarizer_model: ""
-summarizer_base_url: ""
-summarizer_api_key: ""
+# Summarizer model — generates conversation summaries
+summarizer_backend: openai
+summarizer_model: llama3.2:latest
+summarizer_base_url: http://localhost:11434/v1
+summarizer_api_key: ollama
 
 # Temperature — set to 0 for reproducibility
 subject_temperature: 0.0
@@ -31,9 +28,9 @@ trials_per_cell: 15
 judge_replicas: 3
 budget_limit_usd: 30.0
 
-# API features (anthropic backend only)
-use_batch_api: true
-use_prompt_caching: true
+# API features (anthropic backend only, ignored for openai backend)
+use_batch_api: false
+use_prompt_caching: false
 max_output_tokens: 4096
 
 # Factorial design

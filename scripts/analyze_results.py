@@ -52,7 +52,10 @@ def main(results_dir: Path, verbose: bool) -> None:
         "trials_per_cell": "from saved results",
     }
     report_path = generate_report(
-        df, stat_results, {}, config_summary,
+        df,
+        stat_results,
+        {},
+        config_summary,
         results_dir / "report.md",
     )
     click.echo(f"Report: {report_path}")

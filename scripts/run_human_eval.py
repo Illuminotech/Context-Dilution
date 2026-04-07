@@ -6,7 +6,6 @@ the context condition and agent configuration from the evaluator.
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -17,7 +16,7 @@ from src.evaluation.human_eval import (
     load_human_scores,
     select_calibration_sample,
 )
-from src.models import ContextCondition, TaskDefinition, TokenUsage, TrialResult
+from src.models import TaskDefinition, TrialResult
 from src.tasks.registry import TaskRegistry
 
 SCORE_RANGE = range(1, 6)
@@ -95,12 +94,12 @@ def main(
     else:
         sample = select_calibration_sample(all_pairs, fraction=sample_fraction)
 
-    click.echo(f"\nHuman Evaluation Session")
-    click.echo(f"========================")
+    click.echo("\nHuman Evaluation Session")
+    click.echo("========================")
     click.echo(f"Total trials available: {len(all_pairs)}")
     click.echo(f"Trials to evaluate: {len(sample)}")
-    click.echo(f"\nYou will score each output on 4 dimensions (1-5).")
-    click.echo(f"The context condition is HIDDEN from you.\n")
+    click.echo("\nYou will score each output on 4 dimensions (1-5).")
+    click.echo("The context condition is HIDDEN from you.\n")
 
     output_dir = results_dir / "human_eval"
     session = HumanEvalSession(sample, output_dir)
@@ -117,12 +116,12 @@ def main(
 
         eval_id, task_desc, output = item
 
-        click.echo(f"\n{'='*70}")
+        click.echo(f"\n{'=' * 70}")
         click.echo(f"Trial {session.completed + 1} of {session.total}  [{eval_id}]")
-        click.echo(f"{'='*70}")
+        click.echo(f"{'=' * 70}")
         click.echo(f"\n## Task\n{task_desc}")
         click.echo(f"\n## Solution\n{output}")
-        click.echo(f"\n{'='*70}")
+        click.echo(f"\n{'=' * 70}")
         click.echo("Score this solution:\n")
 
         correctness = _prompt_score("Correctness")

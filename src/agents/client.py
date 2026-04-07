@@ -262,7 +262,9 @@ class OpenAICompatibleClient(BaseClient):
                 "Install with: pip install openai"
             ) from e
 
-        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        # Local models can be slow — use 30 min timeout
+        timeout = 1800.0 if is_local else 600.0
+        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
         self._model = model
         self._max_output_tokens = max_output_tokens
         self._temperature = temperature
