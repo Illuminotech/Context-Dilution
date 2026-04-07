@@ -1,0 +1,21 @@
+experiment_name: context_dilution_v1
+subject_model: claude-haiku-4-5-20251001
+judge_model: claude-sonnet-4-6-20250514
+trials_per_cell: 10
+judge_replicas: 3
+budget_limit_usd: 20.0
+use_batch_api: true
+use_prompt_caching: true
+max_output_tokens: 4096
+agent_configs:
+  - single
+  - multi_2
+context_conditions:
+  - full
+  - summarized
+  - partitioned
+  - minimal
+task_types:
+  - sequential
+  - parallel
+  - creative
