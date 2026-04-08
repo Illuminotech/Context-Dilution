@@ -81,14 +81,16 @@ A convenience script wraps all commands:
 
 ```bash
 ./run.sh setup                # install deps + pull Ollama models
-./run.sh pilot                # N=1 pilot (~2-3 hours on M1 Max)
+./run.sh pilot                # N=1 pilot
 ./run.sh pilot --background   # run in background
 ./run.sh run 2                # N=2 trials per cell
-./run.sh status               # check progress
+./run.sh status               # check progress (running/finished/stopped)
 ./run.sh evaluate             # blinded human evaluation (post-experiment)
 ./run.sh analyze              # re-run analysis and regenerate report
 ./run.sh clean                # clear all results
 ```
+
+**Monitoring a run:** Use `./run.sh status` to check if the experiment is running, finished, or stopped. When running in the foreground, the experiment prints "Experiment complete" and generates `results/report.md` when done. For background runs, you can also `tail -f experiment.log | grep "score="` to watch trials complete in real time.
 
 Or run the Python scripts directly:
 
