@@ -6,9 +6,9 @@ subject_model: qwen2.5-coder:14b
 subject_base_url: http://localhost:11434/v1
 subject_api_key: ollama
 
-# Judge model — evaluates outputs (different family from subject)
+# Judge model — evaluates outputs (MUST be different family from subject)
 judge_backend: openai
-judge_model: qwen2.5:32b
+judge_model: gpt-oss:20b
 judge_base_url: http://localhost:11434/v1
 judge_api_key: ollama
 

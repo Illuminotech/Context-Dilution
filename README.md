@@ -65,7 +65,7 @@ pip install -e ".[dev]"
 **For local models** (default configuration, free):
 ```bash
 ollama pull qwen2.5-coder:14b   # subject model
-ollama pull qwen2.5:32b          # judge model
+ollama pull gpt-oss:20b          # judge model (different family from subject)
 ollama pull llama3.2              # summarizer model
 ```
 
@@ -146,7 +146,7 @@ Three LLM roles are independently configurable — each can use a different back
 | Role | Purpose | Default | Recommended |
 |------|---------|---------|-------------|
 | **Subject** | Model under test | Qwen 2.5 Coder 14B (local) | Any model you want to study |
-| **Judge** | Evaluates outputs | Qwen 2.5 32B (local) | Different family from subject |
+| **Judge** | Evaluates outputs | GPT-OSS 20B (local) | Different family from subject |
 | **Summarizer** | Generates conversation summaries | Llama 3.2 3B (local) | Any capable model |
 
 Supported backends:
@@ -161,7 +161,7 @@ subject_backend: openai
 subject_model: qwen2.5-coder:14b
 
 judge_backend: openai
-judge_model: qwen2.5:32b
+judge_model: gpt-oss:20b
 judge_base_url: http://localhost:11434/v1
 ```
 

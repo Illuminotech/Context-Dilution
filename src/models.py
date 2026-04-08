@@ -196,7 +196,7 @@ class ExperimentConfig(BaseModel):
     subject_base_url: str = ""
     subject_api_key: str = ""
     judge_backend: str = "openai"  # default to local for cross-family judging
-    judge_model: str = "llama3.1:70b"
+    judge_model: str = "gpt-oss:20b"
     judge_base_url: str = "http://localhost:11434/v1"
     judge_api_key: str = "ollama"
     summarizer_backend: str = ""  # empty = use subject client

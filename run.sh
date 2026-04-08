@@ -60,7 +60,7 @@ cmd_setup() {
     echo ""
     echo "Pulling Ollama models..."
     ollama pull qwen2.5-coder:14b
-    ollama pull qwen2.5:32b
+    ollama pull gpt-oss:20b
     ollama pull llama3.2
 
     echo ""
