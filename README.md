@@ -195,7 +195,7 @@ This is a research-grade pilot study. The following threats to validity should b
 
 ## Results
 
-*Results will be published here after the experiment is complete.*
+**[Preliminary Findings (N=1 Pilot)](preliminary_findings.md)** — Context dilution confirmed with large effect size (p < 0.000001). Pattern adherence degrades first. Summarized context matches full conversation. Full write-up with figures.
 
 ## License
 
