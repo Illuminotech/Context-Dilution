@@ -5,9 +5,7 @@
 
 ---
 
-In the [original article](https://www.michaelfgolden.com/ideas/solo-pair-or-swarm-context-dilution-and-the-real-cost-of-multi-agent-orchestration), I made a structural argument: distributing a task's context across multiple AI agents degrades output quality because each agent inherits only a fragment of the shared understanding built during a conversation. I called this *context dilution*. The argument was logical, grounded in years of watching the same phenomenon play out in human engineering teams, but it was still just an argument.
-
-This is the data.
+In the [original article](https://www.michaelfgolden.com/ideas/solo-pair-or-swarm-context-dilution-and-the-real-cost-of-multi-agent-orchestration), I made a structural argument: distributing a task's context across multiple AI agents degrades output quality because each agent inherits only a fragment of the shared understanding built during a conversation. I called this *context dilution*. The argument was logical, grounded in years of watching the same phenomenon play out in human engineering teams, but I was curious to discover if I could create an experiment to test the theory. 
 
 ## The Experiment
 
@@ -26,6 +24,8 @@ If context dilution is real, scores should degrade as context thins. They did.
 
 ## The Gradient
 
+![Dilution gradient box plots by task type](figures/dilution_gradient.png)
+
 | Condition | Mean Composite Score |
 |-----------|---------------------|
 | Summarized | 4.44 |
@@ -40,6 +40,8 @@ The pairwise comparisons sharpen the picture. The drop from full to summarized? 
 ## What Breaks First
 
 Not everything degrades equally. The radar chart tells the story dimension by dimension:
+
+![Rubric dimensions by context condition](figures/radar_chart.png)
 
 | Dimension | Full | Minimal | Drop |
 |-----------|------|---------|------|
@@ -57,6 +59,8 @@ Error avoidance, by contrast, barely moves. Models already have strong priors ag
 The original article hypothesized that sequential reasoning tasks (debugging, tracing data flows) would be most sensitive to context dilution because understanding accumulates linearly, while parallel tasks (auditing, batch refactoring) would be least sensitive because sub-tasks are self-contained.
 
 The data tells a different story.
+
+![Interaction: context condition x task type](figures/interaction_plot.png)
 
 | Task Type | Full | Minimal | Drop |
 |-----------|------|---------|------|
